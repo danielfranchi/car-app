@@ -1,0 +1,42 @@
+services:
+  backend:
+    container_name: backend_container
+    build:
+      context: ./backend
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - MONGO_URI=mongodb://root:pass@mongo:27017/shopper?authSource=admin
+    volumes:
+      - ./backend:/app
+  frontend:
+    container_name: frontend_container
+    build:
+      context: ./frontend
+    ports:
+      - "80:80"
+    environment:
+      - REACT_APP_API_URL=http://backend:8080
+  mongo:
+    image: mongo:6
+    container_name: mongo_container
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=pass
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.runCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
